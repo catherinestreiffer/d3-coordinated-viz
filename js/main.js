@@ -4,7 +4,7 @@
 //pseudo-global variables
 //list of attributes
 var attrArray = ["PERC_POISONED_10_and_up", "perc_poisoned_5_and_up", "built_before_1950_pct", "built_before_1980_pct", "screening_rate"];
-var expressed = attrArray[0]; //initial attribute
+var expressed = attrArray[2]; //initial attribute
 
 //begin script when window loads
 window.onload = setMap();
@@ -12,7 +12,7 @@ window.onload = setMap();
 //set up choropleth map
 function setMap(){
   //map frame dimensions
-  var width = 960,
+    var width = window.innerWidth * 0.5,
     height = 460;
 
   //create new svg container for the map
@@ -23,12 +23,14 @@ function setMap(){
     .attr("height", height);
 
     //create Albers equal area conic projection
-  var projection = d3.geo.albers()
-  // .center([44.3, -89.6])
-  // .rotate([-2, 0, 0])
-  // .parallels([42, 46])
-   .scale(2500)
-  // .translate([width / 480, height / 250]);
+//    var center=[44.2563,-89.6385]
+//    var rotate=[104.64, -5.45, 0]
+    var projection = d3.geo.albers()
+    .center([10.91, 38.15])
+    .rotate([104.64, -5.45, 0])
+    .parallels([29.5, 45.5])
+    .scale(4573.73)
+    .translate([width / 2, height / 2]);
 
   //create a path generator
   var path = d3.geo.path()
@@ -49,6 +51,8 @@ function setMap(){
 var colorScale = makeColorScale(csvData);
     //add enumeration untis to the map
     setEnumerationUnits (wisconsinCounties, map, path, colorScale);
+    //add coordinated visualization to the map
+    setChart(csvData, colorScale);
   };
 }; //end of setMap()
 
@@ -56,7 +60,8 @@ function joinData(wisconsinCounties, csvData) {
   //loop through csv to assign each set of csv attribute values to geojson county
   for (var i=0; i<csvData.length; i++){
     var csvCounty = csvData[i]; //the current county
-    var csvKey = csvCounty.FIPS; //the CSV primary key
+    // the stupid WI_counties_wgs84 doesn't have the true FIPS (CTY_FIPS + 55000 = FIPS) so subtract 55000 from FIPS to get them to line up
+    var csvKey = csvCounty.FIPS - 55000; //the CSV primary key.
     //loop through geojson regions to find correct region
     for (var a=0; a<wisconsinCounties.length; a++){
         var geojsonProps = wisconsinCounties[a].properties; //the current county geojson properties
@@ -87,6 +92,77 @@ function setEnumerationUnits(wisconsinCounties, map, path, colorScale){
             return choropleth(d.properties, colorScale);
       });
 };
+
+//function to create coordinated bar chart
+function setChart(csvData, colorScale){
+    //chart frame dimensions
+    var chartWidth = window.innerWidth * 0.425,
+        chartHeight = 460;
+        //create a scale to size bars proportionally to frame
+    var yScale = d3.scale.linear()
+        .range([0, chartHeight])
+        .domain([0, 105]);
+
+    //create a second svg element to hold the bar chart
+    var chart = d3.select("body")
+        .append("svg")
+        .attr("width", chartWidth)
+        .attr("height", chartHeight)
+        .attr("class", "chart");
+        //set bars for each province
+    var bars = chart.selectAll(".bars")
+        .data(csvData)
+        .enter()
+        .append("rect")
+        .sort(function(a, b){
+            return a[expressed]-b[expressed]
+        })
+        .attr("class", function(d){
+            return "bars " + d.FIPS;
+        })
+        .attr("width", chartWidth / csvData.length - 1)
+        .attr("x", function(d, i){
+            return i * (chartWidth / csvData.length);
+        })
+        .attr("height", function(d){
+            return yScale(parseFloat(d[expressed]));
+        })
+        .attr("y", function(d){
+            return chartHeight - yScale(parseFloat(d[expressed]));
+        })
+        .style("fill", function(d){
+            return choropleth(d, colorScale);
+        });
+        //annotate bars with attribute value text
+    var numbers = chart.selectAll(".numbers")
+        .data(csvData)
+        .enter()
+        .append("text")
+        .sort(function(a, b){
+            return a[expressed]-b[expressed]
+        })
+        .attr("class", function(d){
+            return "numbers " + d.FIPS;
+        })
+        .attr("text-anchor", "middle")
+        .attr("x", function(d, i){
+            var fraction = chartWidth / csvData.length;
+            return i * fraction + (fraction - 1) / 2;
+        })
+        .attr("y", function(d){
+            return chartHeight - yScale(parseFloat(d[expressed])) + 15;
+        })
+        .text(function(d){
+            return d[expressed];
+        });
+        //below Example 2.8...create a text element for the chart title
+    var chartTitle = chart.append("text")
+        .attr("x", 20)
+        .attr("y", 40)
+        .attr("class", "chartTitle")
+        .text("Number of Variable " + expressed[3] + " in each county");
+};
+
 //function to create color scale generator
 function makeColorScale(data){
           var colorClasses = [
@@ -119,8 +195,8 @@ function makeColorScale(data){
           //assign array of last 4 cluster minimums as domain
           colorScale.domain(domainArray);
 
-          return colorScale
-          console.log(colorScale.quantiles());
+          return colorScale;
+
 };
 //function to test for data value and return color
 function choropleth(props, colorScale){
