@@ -1,12 +1,11 @@
 //First line of main.js...wrap everything in a self-executing anonymous function to move to local scope
 (function(){
-
 //pseudo-global variables
 //list of attributes
 var attrArray = ["PERC_POISONED_10_and_up", "perc_poisoned_5_and_up", "built_before_1950_pct", "built_before_1980_pct", "screening_rate"];
 var expressed = attrArray[1]; //initial attribute not actually inital because I'm currently looking at a different attribute
 //attribute names
-var attributeNames = ["Percent of children under 6 years old with blood lead level 5 mcg/dL and up", "Percent of children under 6 years old with blood lead level 10 mcg/dL and up", "Percent of housing built before 1950", "Percent of housing built before 1980", "Screening rate"];
+var attributeNames = ["Percent of children under 6 with BLL 5 mcg/dL and up", "Percent of children under 6 with BLL 10 mcg/dL and up", "Percent of housing built before 1950", "Percent of housing built before 1980", "Screening rate"];
 //begin script when window loads
 window.onload = setMap();
 
@@ -15,7 +14,7 @@ function setMap(){
     //map frame dimensions
     var width = window.innerWidth * 0.5,
     height = 460;
-    //create new svg container for the map
+    //create svg container for the map
     var map = d3.select("body")
       .append("svg")
       .attr("class", "map")
@@ -108,7 +107,7 @@ function setChart(csvData, colorScale){
           .attr("height", chartHeight)
           .attr("class", "chart");
 
-      //create a rectangle for chart background fill
+      //create a rectangle for chart background fill except I decided not to fill the background
       var chartBackground = chart.append("rect")
           .attr("class", "chartBackground")
           .attr("width", chartInnerWidth)
@@ -118,14 +117,14 @@ function setChart(csvData, colorScale){
       //create a scale to size bars proportionally to frame and for axis
       var yScale = d3.scale.linear()
           .range([463, 0])
-          .domain([0, 100]);
+          .domain([0, 72]); // currently 72 is a magic number. Will make 105* max val of current attribute
 
-      //set bars for each province
+      //set bars for each county
       var bars = chart.selectAll(".bar")
           .data(csvData)
           .enter()
           .append("rect")
-          .sort(function(a, b){
+          .sort(function(a, b){ //sorts highest to lowest
               return b[expressed]-a[expressed]
           })
           .attr("class", function(d){
@@ -170,6 +169,8 @@ function setChart(csvData, colorScale){
           .attr("height", chartInnerHeight)
           .attr("transform", translate);
   };
+
+//I'm keeping this code here for now in case I decide to change the format while doing module 10
       //annotate bars with attribute value text
 /*  var numbers = chart.selectAll(".numbers")
       .data(csvData)
@@ -192,8 +193,9 @@ function setChart(csvData, colorScale){
       .text(function(d){
           return d[expressed];
       });*/
-      //below Example 2.8...create a text element for the chart title
-//function to create coordinated bar chart
+
+//I'm keeping this code here for now in case I decide to change the format while doing module 10
+//function to create horizontal coordinated bar chart
 /*function setHorizontalChart(csvData, colorScale){
   //chart frame dimensions
   var chartWidth = window.innerWidth * 0.425,
@@ -249,7 +251,7 @@ function setChart(csvData, colorScale){
       .text(function(d){
           return d[expressed];
       });
-      //below Example 2.8...create a text element for the chart title
+  //create a text element for the chart title
   var chartTitle = chart.append("text")
       .attr("x", 20)
       .attr("y", 40)
@@ -261,11 +263,11 @@ function setChart(csvData, colorScale){
 //function to create color scale generator
 function makeColorScale(data){
           var colorClasses = [
-              "#D4B9DA",
-              "#C994C7",
-              "#DF65B0",
-              "#DD1C77",
-              "#980043"
+              "#bfd3e6",
+              "#9ebcda",
+              "#8c96c6",
+              "#8856a7",
+              "#810f7c"
           ];
 
           //create color scale generator
@@ -297,11 +299,11 @@ function makeColorScale(data){
 function choropleth(props, colorScale){
     //make sure attribute value is a number
     var val = parseFloat(props[expressed]);
-    //if attribute value exists, assign a color; otherwise assign gray
+    //if attribute value exists, assign a color; otherwise assign light gray
     if (val && val != NaN){
         return colorScale(val);
     } else {
-        return "#CCC";
+        return "#edf8fb";
     };
 };
 })(); //last line of main.js
