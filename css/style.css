@@ -67,8 +67,6 @@ option {
     height: 50px;
     min-width: 100px;
     color: #000;
-    background-color: #fff;
-    border: solid thin #fff;
     padding: 5px 10px;
     top: -75px;
 }

@@ -4,11 +4,19 @@
 //list of attributes
 var attrArray = ["PERC_POISONED_10_and_up", "perc_poisoned_5_and_up", "built_before_1950_pct", "built_before_1980_pct", "screening_rate"];
 var expressed = attrArray[0]; //initial attribute
-//attribute names for title and selection
-var attributeNames = ["Percent of children under 6 with BLL 5 mcg/dL and up", "Percent of children under 6 with BLL 10 mcg/dL and up", "Percent of housing built before 1950", "Percent of housing built before 1980", "Screening rate"];
-var expressedTitleName = attributeNames[0];
-var selectionNames = ["BLL 5 mcg/dL and up", "BLL 10 mcg/dL and up", "housing built before 1950", "housing built before 1980", "screening rate"];
-var expressedSelectionName = selectionNames[0];
+//attribute names for title and selection in dictionaries (strangely called "maps")
+var attributeDescriptions = new Map()
+attributeDescriptions.set("PERC_POISONED_10_and_up","Percent of children under 6 with BLL 10 mcg/dL and up");
+attributeDescriptions.set("perc_poisoned_5_and_up","Percent of children under 6 with BLL 5 mcg/dL and up");
+attributeDescriptions.set("built_before_1950_pct","Percent of housing built before 1950");
+attributeDescriptions.set("built_before_1980_pct","Percent of housing built before 1980");
+attributeDescriptions.set("screening_rate","Screening rate");
+var attributeSelections = new Map()
+attributeSelections.set("PERC_POISONED_10_and_up","BLL 10 mcg/dL and up");
+attributeSelections.set("perc_poisoned_5_and_up","BLL 5 mcg/dL and up");
+attributeSelections.set("built_before_1950_pct","housing built before 1950");
+attributeSelections.set("built_before_1980_pct","housing built before 1980");
+attributeSelections.set("screening_rate","Screening rate");
 //chart frame dimensions
 var chartWidth = window.innerWidth * 0.425,
     chartHeight = 473,
@@ -96,16 +104,16 @@ function joinData(wisconsinCounties, csvData) {
 //function to highlight enumeration units and bars
 function highlight(props){
     //change stroke
-    var selected = d3.selectAll("." + props.FIPS)
+    var selected = d3.selectAll("[fips='" + props.CTY_FIPS + "']")
         .style({
-            "stroke": "blue",
+            "stroke": "orange",
             "stroke-width": "2"
         });
     setLabel(props);
 };
 //function to reset the element style on mouseout
 function dehighlight(props){
-    var selected = d3.selectAll("." + props.adm1_code)
+    var selected = d3.selectAll("[fips='" + props.CTY_FIPS + "']")
         .style({
             "stroke": function(){
                 return getStyle(this, "stroke")
@@ -156,24 +164,27 @@ function moveLabel(){
 
 function setEnumerationUnits(wisconsinCounties, map, path, colorScale){
   //add Wisconsin counties to map
-  var counties = map.selectAll(".counties")
+  var counties = map.selectAll()
       .data(wisconsinCounties)
       .enter()
       .append("path")
-      .attr("class", function(d){
-          return "counties " + d.properties.FIPS;
+      .attr("class","counties")
+      .attr("fips", function(d){
+          return d.properties.CTY_FIPS;
       })
       .attr("d", path)
       .style("fill", function(d){
             return choropleth(d.properties, colorScale);
       })
+      .style("stroke", "#000")
+      .style("stroke-width", "0.5px")
       .on("mouseover", function(d){
            highlight(d.properties)
       })
       .on("mouseout", function(d){
           dehighlight(d.properties)
+      })
       .on("mousemove", moveLabel);
-      });
 
     //add style descriptor to each path
   var desc = counties.append("desc")
@@ -209,7 +220,7 @@ function setChart(csvData, colorScale){
       //create a scale to size bars proportionally to frame and for axis
       var yScale = d3.scale.linear()
           .range([463, 0])
-          .domain([0, 72]); // currently 72 is a magic number. Will make 105* max val of current attribute
+          .domain([0, 72]); // currently 72 is a magic number. Could make 105* max val of current attribute
 
       //set bars for each county
       var bars = chart.selectAll(".bar")
@@ -238,7 +249,6 @@ function setChart(csvData, colorScale){
           .attr("x", 40)
           .attr("y", 40)
           .attr("class", "chartTitle")
-          .text(attributeNames[0] + " in each county");
 
       //create vertical axis generator
       var yAxis = d3.svg.axis()
@@ -264,8 +274,8 @@ function setChart(csvData, colorScale){
   //function to create dynamic label
   function setLabel(props){
       //label content
-      var labelAttribute = "<h1>" + props[expressed] +
-          "</h1><b>" + expressed + "</b>";
+      var labelAttribute = "<h1>" + props[expressed] + "%" +
+          "</h1><b>" + attributeSelections.get(expressed) + "</b>";
 
       //create info label div
       var infolabel = d3.select("body")
@@ -298,8 +308,8 @@ function updateChart(bars, n, colorScale){
             return choropleth(d, colorScale);
         });
         //at the bottom of updateChart()...add text to chart title
-//    var chartTitle = d3.select(".chartTitle")
-//        .text(attributeNames[i] + " in each county");
+    var chartTitle = d3.select(".chartTitle")
+        .text(attributeDescriptions.get(expressed) + " in each county");
 };
 
 //function to create color scale generator
@@ -370,7 +380,7 @@ function createDropdown(csvData){
         .enter()
         .append("option")
         .attr("value", function(d){ return d })
-        .text(function(d){ return d });
+        .text(function(d){ return attributeSelections.get(d) });
 };
 
 //dropdown change listener handler
