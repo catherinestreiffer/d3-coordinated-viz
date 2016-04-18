@@ -15,7 +15,7 @@
 }
 
 .chartTitle {
-    font-family: sans-serif;
+    font-family: Arial, sans-serif;
     font-size: 0.75em;
     font-weight: bold;
 }
@@ -40,17 +40,17 @@
 }
 
 .axis text {
-    font-family: sans-serif;
+    font-family: Arial, sans-serif;
     font-size: 0.8em;
     fill: #999;
 }
 
 .dropdown {
     position: absolute;
-    top: 30px;
+    top: 320px;
     left: 40px;
     z-index: 10;
-    font-family: sans-serif;
+    font-family: Arial, sans-serif;
     font-size: 1em;
     font-weight: bold;
     padding: 2px;
@@ -76,4 +76,18 @@ option {
     padding: 0;
     display: inline-block;
     line-height: 1em;
+}
+
+div.tooltip {
+  position: absolute;
+  text-align: center;
+  width: 150px;
+  height: 25px;
+  padding: 2px;
+  font-family: Arial, sans-serif;
+  font-size: 10px;
+  background: #FFFFE0;
+  border: 1px;
+  border-radius: 8px;
+  pointer-events: none;
 }

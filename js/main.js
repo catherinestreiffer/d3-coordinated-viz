@@ -2,8 +2,9 @@
 (function(){
 //pseudo-global variables
 //list of attributes
-var attrArray = ["PERC_POISONED_10_and_up", "perc_poisoned_5_and_up", "built_before_1950_pct", "built_before_1980_pct", "screening_rate"];
-var expressed = attrArray[0]; //initial attribute
+var attrArray = ["COUNTY","PERC_POISONED_10_and_up", "perc_poisoned_5_and_up", "built_before_1950_pct", "built_before_1980_pct", "screening_rate"];
+var expressable = ["PERC_POISONED_10_and_up", "perc_poisoned_5_and_up", "built_before_1950_pct", "built_before_1980_pct", "screening_rate"];
+var expressed = expressable[0]; //initial attribute
 //attribute names for title and selection in dictionaries (strangely called "maps")
 var attributeDescriptions = new Map()
 attributeDescriptions.set("PERC_POISONED_10_and_up","Percent of children under 6 with BLL 10 mcg/dL and up");
@@ -17,6 +18,15 @@ attributeSelections.set("perc_poisoned_5_and_up","BLL 5 mcg/dL and up");
 attributeSelections.set("built_before_1950_pct","housing built before 1950");
 attributeSelections.set("built_before_1980_pct","housing built before 1980");
 attributeSelections.set("screening_rate","Screening rate");
+// the color classes
+var colorClasses = [
+    "#bfd3e6",
+    "#9ebcda",
+    "#8c96c6",
+    "#8856a7",
+    "#810f7c"
+];
+
 //chart frame dimensions
 var chartWidth = window.innerWidth * 0.425,
     chartHeight = 473,
@@ -74,7 +84,12 @@ function setMap(){
       setEnumerationUnits (wisconsinCounties, map, path, colorScale);
       //add coordinated visualization to the map
       setChart(csvData, colorScale);
+      //make the dropdown menu to change the attribute visualized
       createDropdown(csvData);
+      //make the legend
+      makeLegend(map, 40, height-60, 0, -1);
+      //update the legend as a new attribute is selected
+      updateLegend(colorScale)
     };
 }; //end of setMap()
 
@@ -93,7 +108,12 @@ function joinData(wisconsinCounties, csvData) {
           //assign all attributes and values
           attrArray.forEach(function(attr){
           var val = parseFloat(csvCounty[attr]); //get csv attribute value
-          geojsonProps[attr] = val; //assign attribute and value to geojson properties
+          if (isNaN(val)) {
+            geojsonProps[attr] = csvCounty[attr]; //assign attribute and value to geojson properties
+          }
+          else {
+            geojsonProps[attr] = val;
+          }
           });
         };
       };
@@ -288,7 +308,7 @@ function setChart(csvData, colorScale){
 
       var countyName = infolabel.append("div")
           .attr("class", "labelname")
-          .html(props.name);
+          .html(props.COUNTY);
   };
   //function to position, size, and color bars in chart
 function updateChart(bars, n, colorScale){
@@ -311,17 +331,8 @@ function updateChart(bars, n, colorScale){
     var chartTitle = d3.select(".chartTitle")
         .text(attributeDescriptions.get(expressed) + " in each county");
 };
-
 //function to create color scale generator
 function makeColorScale(data){
-          var colorClasses = [
-              "#bfd3e6",
-              "#9ebcda",
-              "#8c96c6",
-              "#8856a7",
-              "#810f7c"
-          ];
-
           //create color scale generator
           var colorScale = d3.scale.threshold()
               .range(colorClasses);
@@ -376,13 +387,12 @@ function createDropdown(csvData){
 
     //add attribute name options
     var attrOptions = dropdown.selectAll("attrOptions")
-        .data(attrArray)
+        .data(expressable)
         .enter()
         .append("option")
         .attr("value", function(d){ return d })
         .text(function(d){ return attributeSelections.get(d) });
 };
-
 //dropdown change listener handler
 function changeAttribute(attribute, csvData){
     //change the expressed attribute
@@ -413,6 +423,47 @@ function changeAttribute(attribute, csvData){
         })
         .duration(500);
     updateChart(bars, csvData.length, colorScale);
+    updateLegend(colorScale)
 };
+
+//Adding legend for our choropleth
+//adapted from static legend in http://bl.ocks.org/KoGor/5685876
+function makeLegend(map,startX,startY,xDir,yDir){
+
+var ls_w = 20, ls_h = 20;
+
+var legend = map.selectAll("g.legend")
+.data(colorClasses)
+.enter().append("g")
+.attr("class","legend")
+
+legend.append("rect")
+.attr("x", function(d, i){ return startX + xDir*(i*ls_w);})
+.attr("y", function(d, i){ return startY + yDir*(i*ls_h);})
+.attr("width", ls_w)
+.attr("height", ls_h)
+.style("fill", function(d, i) { return d })
+.style("opacity", 0.8)
+.attr("class", "legendSquare")
+
+legend.append("text")
+.attr("x", function(d, i){ return startX + xDir*(i*ls_w) + 30;})
+.attr("y", function(d, i){ return startY + yDir*(i*ls_h) + ls_h - 4;})
+.attr("class", "legendSquareText")
+};
+
+// Setting color domains(intervals of values) for our map
+function updateLegend(colorScale) {
+  thresholds=colorScale.domain()
+  legendTexts = []
+  legendTexts.push("<"+thresholds[0]+"%")
+  thresholds.forEach(function(d) {
+    legendTexts.push(d+"%+")
+  }
+  )
+  d3.selectAll(".legendSquareText")
+  .text(function(d, i){ return legendTexts[i]})
+};
+
 
 })(); //last line of main.js
