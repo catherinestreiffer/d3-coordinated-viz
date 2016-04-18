@@ -79,13 +79,13 @@ function setMap(){
       //join csv data to GeoJSON enumeration units
       wisconsinCounties = joinData(wisconsinCounties, csvData);
       //create the color scale
-      var colorScale = makeColorScale(csvData);
+      var colorScale = makeColorScale(wisconsinCounties);
       //add enumeration untis to the map
       setEnumerationUnits (wisconsinCounties, map, path, colorScale);
       //add coordinated visualization to the map
-      setChart(csvData, colorScale);
+      setChart(wisconsinCounties, colorScale);
       //make the dropdown menu to change the attribute visualized
-      createDropdown(csvData);
+      createDropdown(wisconsinCounties);
       //make the legend
       makeLegend(map, 40, height-60, 0, -1);
       //update the legend as a new attribute is selected
@@ -212,7 +212,7 @@ function setEnumerationUnits(wisconsinCounties, map, path, colorScale){
 };
 
 //function to create coordinated bar chart
-function setChart(csvData, colorScale){
+function setChart(wisconsinCounties, colorScale){
   //chart frame dimensions
   var chartWidth = window.innerWidth * 0.425,
       chartHeight = 473,
@@ -244,21 +244,28 @@ function setChart(csvData, colorScale){
 
       //set bars for each county
       var bars = chart.selectAll(".bar")
-          .data(csvData)
+          .data(wisconsinCounties)
           .enter()
           .append("rect")
           .sort(function(a, b){ //sorts highest to lowest
-              return b[expressed]-a[expressed]
+              return b.properties[expressed]-a.properties[expressed]
           })
           .attr("class", function(d){
-              return "bar " + d.CTY_FIPS;
+              return "bar";
           })
-          .attr("width", chartInnerWidth / csvData.length - 1)
-         .on("mouseover", highlight)
-         .on("mouseout", dehighlight)
-         .on("mousemove", moveLabel)
+          .attr("fips", function(d){
+              return d.properties.CTY_FIPS;
+          })
+          .attr("width", chartInnerWidth / wisconsinCounties.length - 1)
+          .on("mouseover", function(d){
+               highlight(d.properties)
+          })
+          .on("mouseout", function(d){
+              dehighlight(d.properties)
+          })
+          .on("mousemove", moveLabel)
           .attr("x", function(d, i){
-              return i * (chartInnerWidth / csvData.length) + leftPadding;
+              return i * (chartInnerWidth / wisconsinCounties.length) + leftPadding;
           });
       //add style descriptor to each rect
       var desc = bars.append("desc")
@@ -289,7 +296,7 @@ function setChart(csvData, colorScale){
           .attr("transform", translate);
 
       //set bar positions, heights, and colors
-      updateChart(bars, csvData.length, colorScale);
+      updateChart(bars, wisconsinCounties.length, colorScale);
   };
   //function to create dynamic label
   function setLabel(props){
@@ -318,14 +325,14 @@ function updateChart(bars, n, colorScale){
         })
         //size/resize bars
         .attr("height", function(d, i){
-            return 463 - yScale(parseFloat(d[expressed]));
+            return 463 - yScale(parseFloat(d.properties[expressed]));
         })
         .attr("y", function(d, i){
-            return yScale(parseFloat(d[expressed])) + topBottomPadding;
+            return yScale(parseFloat(d.properties[expressed])) + topBottomPadding;
         })
         //color/recolor bars
         .style("fill", function(d){
-            return choropleth(d, colorScale);
+            return choropleth(d.properties, colorScale);
         });
         //at the bottom of updateChart()...add text to chart title
     var chartTitle = d3.select(".chartTitle")
@@ -340,7 +347,7 @@ function makeColorScale(data){
           //build array of all values of the expressed attribute
           var domainArray = [];
           for (var i=0; i<data.length; i++){
-              var val = parseFloat(data[i][expressed]);
+              var val = parseFloat(data[i].properties[expressed]);
               domainArray.push(val);
           };
           //cluster data using ckmeans clustering algorithm to create natural breaks
@@ -371,13 +378,13 @@ function choropleth(props, colorScale){
 };
 
 //function to create a dropdown menu for attribute selection
-function createDropdown(csvData){
+function createDropdown(wisconsinCounties){
     //add select element
     var dropdown = d3.select("body")
         .append("select")
         .attr("class", "dropdown")
         .on("change", function(){
-            changeAttribute(this.value, csvData)
+            changeAttribute(this.value, wisconsinCounties)
         });
     //add initial option
     var titleOption = dropdown.append("option")
@@ -394,12 +401,12 @@ function createDropdown(csvData){
         .text(function(d){ return attributeSelections.get(d) });
 };
 //dropdown change listener handler
-function changeAttribute(attribute, csvData){
+function changeAttribute(attribute, wisconsinCounties){
     //change the expressed attribute
     expressed = attribute;
 
     //recreate the color scale
-    var colorScale = makeColorScale(csvData);
+    var colorScale = makeColorScale(wisconsinCounties);
 
     //recolor enumeration units
     var counties = d3.selectAll(".counties")
@@ -412,17 +419,17 @@ function changeAttribute(attribute, csvData){
     var bars = d3.selectAll(".bar")
         //re-sort bars
         .sort(function(a, b){
-            return b[expressed] - a[expressed];
+            return b.properties[expressed] - a.properties[expressed];
         })
         .attr("x", function(d, i){
-            return i * (chartInnerWidth / csvData.length) + leftPadding;
+            return i * (chartInnerWidth / wisconsinCounties.length) + leftPadding;
         })
         .transition() //add animation
         .delay(function(d, i){
             return i * 20
         })
         .duration(500);
-    updateChart(bars, csvData.length, colorScale);
+    updateChart(bars, wisconsinCounties.length, colorScale);
     updateLegend(colorScale)
 };
 

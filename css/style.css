@@ -1,3 +1,7 @@
+* {
+  font-family: Arial, sans-serif;
+}
+
 .counties {
     stroke: #000;
     stroke-width: 0.5px;
@@ -40,14 +44,13 @@
 }
 
 .axis text {
-    font-family: Arial, sans-serif;
     font-size: 0.8em;
     fill: #999;
 }
 
 .dropdown {
     position: absolute;
-    top: 320px;
+    top: 295px;
     left: 40px;
     z-index: 10;
     font-family: Arial, sans-serif;
